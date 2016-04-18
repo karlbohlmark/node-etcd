@@ -32,14 +32,6 @@ class Etcd
     opt = @_prepareOpts ("keys/" + @_stripSlashPrefix key), "/v2", value, options
     @client.put opt, callback
 
-  # Set key to value synchronously
-  # Usage:
-  #   .set("key", "value")
-  #   .set("key", "value", {prevValue: "oldvalue"})
-  setSync: (key, value, options = {}) ->
-    options.synchronous = true
-    this.set key, value, options
-
   # Get value of key
   # Usage:
   #   .get("key", callback)
@@ -48,14 +40,6 @@ class Etcd
     [options, callback] = @_argParser options, callback
     opt = @_prepareOpts ("keys/" + @_stripSlashPrefix key), "/v2", null, options
     @client.get opt, callback
-
-  # Synchronously get value of key
-  # Usage:
-  #   .get("key")
-  #   .get("key", {recursive: true})
-  getSync: (key, options = {}) ->
-    options.synchronous = true
-    this.get key, options
 
   # Create a key (atomic in order)
   # Usage:
@@ -81,13 +65,6 @@ class Etcd
 
   delete: @::del
 
-  # Synchronous delete a key
-  # Usage:
-  #   .del("key")
-  #   .del("key", {recursive: true}))
-  delSync: (key, options = {}) ->
-    options.synchronous = true
-    this.del key, options
 
   # Make a directory
   # Usage:
@@ -98,14 +75,6 @@ class Etcd
     options.dir = true
     @set dir, null, options, callback
 
-  # Synchronously make a directory
-  # Usage:
-  #   .mkdir("dir")
-  #   .mkdir("dir", options)
-  mkdirSync: (dir, options = {}) ->
-    options.synchronous = true
-    this.mkdir dir, options
-
   # Remove a directory
   # Usage:
   #   .rmdir("dir", callback)
@@ -114,14 +83,6 @@ class Etcd
     [options, callback] = @_argParser options, callback
     options.dir = true
     @del dir, options, callback
-
-  # Synchronously remove a directory
-  # Usage:
-  #   .rmdir("dir")
-  #   .rmdir("dir", {recursive: true})
-  rmdirSync: (dir, options = {}) ->
-    options.synchronous = true
-    this.rmdir dir, options
 
   # Compare and swap value if unchanged
   # Usage:

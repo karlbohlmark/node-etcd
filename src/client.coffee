@@ -1,5 +1,4 @@
 request     = require 'request'
-deasync     = require 'deasync'
 _           = require 'underscore'
 
 
@@ -35,7 +34,6 @@ class CancellationToken
 class Client
 
   constructor: (@hosts, @sslopts) ->
-    @syncmsg = {}
 
   execute: (method, options, callback) =>
     opt = _.defaults (_.clone options), defaultRequestOptions, { method: method }
@@ -43,11 +41,8 @@ class Client
 
     servers = _.shuffle @hosts
     token = new CancellationToken servers, opt.clientOptions.maxRetries
-    syncResp = @_multiserverHelper servers, opt, token, callback
-    if options.synchronous is true
-      return syncResp
-    else
-      return token
+    @_multiserverHelper servers, opt, token, callback
+    return token
 
 
   put: (options, callback) => @execute "PUT", options, callback
@@ -85,24 +80,9 @@ class Client
       # Deliver response
       @_handleResponse err, resp, body, callback
 
-    syncRespHandler = (err, body, headers) =>
-      options.syncdone = true
-      @syncmsg =
-        err: err
-        body: body
-        headers: headers
-    callback = syncRespHandler if options.synchronous is true
-
     req = request options, reqRespHandler
     token.setRequest req
-
-    if options.synchronous is true and options.syncdone is undefined
-      options.syncdone = false
-      deasync.runLoopOnce() while !options.syncdone
-      delete options.syncdone
-      return @syncmsg
-    else
-      return req
+    return req
 
 
   _retry: (token, options, callback) =>
