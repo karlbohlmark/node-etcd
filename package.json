@@ -25,6 +25,7 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "node_modules/.bin/coffee --bare --compile --output lib/ src/*.coffee",
+    "postinstall": "npm run build",
     "prepublish": "node_modules/.bin/coffee --bare --compile --output lib/ src/*.coffee",
     "postpublish": "rm -rf lib",
     "test": "node_modules/.bin/mocha --compilers coffee:coffee-script/register test/",
