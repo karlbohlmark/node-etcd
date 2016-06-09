@@ -10,7 +10,7 @@ process.env.RUNNING_UNIT_TESTS = true
 
 # Helpers
 
-getNock = (host = 'http://127.0.0.1:4001') ->
+getNock = (host = 'http://127.0.0.1:2379') ->
   nock host
 
 
@@ -38,12 +38,12 @@ describe 'Utility', ->
 
 describe 'Connecting', ->
 
-  mock = (host = 'http://127.0.0.1:4001/') ->
+  mock = (host = 'http://127.0.0.1:2379/') ->
     nock(host)
       .get('/v2/keys/key')
       .reply(200, '{"action":"GET","key":"/key","value":"value","index":1}')
 
-  it 'should support empty constructor (localhost:4001)', (done) ->
+  it 'should support empty constructor (localhost:2379)', (done) ->
     etcd = new Etcd
     m = mock()
     etcd.get 'key', (err, val) ->
@@ -92,9 +92,9 @@ describe 'Basic auth', ->
     auth =
       user: "username"
       pass: "password"
-    etcd = new Etcd "localhost:4001", { auth: auth }
+    etcd = new Etcd "localhost:2379", { auth: auth }
 
-    m = nock("http://localhost:4001")
+    m = nock("http://localhost:2379")
       .get("/v2/keys/key")
       .basicAuth(
         user: "username",
@@ -139,26 +139,6 @@ describe 'Basic functions', ->
         err.message.should.equal "Key not found"
         done()
 
-  describe '#getSync()', ->
-    it 'should synchronously return entry from etcd', (done) ->
-      getNock()
-        .get('/v2/keys/key')
-        .reply(200, '{"action":"GET","key":"/key","value":"value","index":1}')
-      val = etcd.getSync 'key'
-      doneCheck = checkVal done
-      doneCheck val.err, val.body
-
-    it 'should synchronously return with error on error', (done) ->
-      getNock()
-        .get('/v2/keys/key')
-        .reply(404, {"errorCode": 100, "message": "Key not found"})
-      val = etcd.getSync 'key'
-      val.err.should.be.instanceOf Error
-      val.err.error.errorCode.should.equal 100
-      val.err.message.should.equal "Key not found"
-      done()
-
-
   describe '#set()', ->
     it 'should put to etcd', (done) ->
       getNock()
@@ -177,20 +157,11 @@ describe 'Basic functions', ->
         .put('/v2/keys/key', { value: "value" })
         .reply(200, '{"action":"SET","key":"/key","prevValue":"value","value":"value","index":1}')
 
-      (nock 'http://127.0.0.1:4001')
+      (nock 'http://127.0.0.1:2379')
         .put('/v2/keys/key', { value: "value" })
         .reply(307, "", { location: "http://127.0.0.1:4002/v2/keys/key" })
 
       etcd.set 'key', 'value', checkVal done
-
-  describe '#setSync()', ->
-    it 'should synchronously put to etcd', (done) ->
-      getNock()
-        .put('/v2/keys/key', { value: "value" })
-        .reply(200, '{"action":"SET","key":"/key","prevValue":"value","value":"value","index":1}')
-      val = etcd.setSync 'key', 'value'
-      doneCheck = checkVal done
-      doneCheck val.err, val.body
 
   describe '#create()', ->
     it 'should post value to dir', (done) ->
@@ -237,42 +208,15 @@ describe 'Basic functions', ->
         val.node.should.containEql {dir: true}
         done()
 
-  describe '#mkdirSync()', ->
-    it 'should synchronously create directory', (done) ->
-      getNock()
-        .put('/v2/keys/key?dir=true')
-        .reply(200, '{"action":"create","node":{"key":"/key","dir":true,"modifiedIndex":1,"createdIndex":1}}')
-      val = etcd.mkdirSync 'key'
-      val.body.should.containEql {action: "create"}
-      val.body.node.should.containEql {key: "/key"}
-      val.body.node.should.containEql {dir: true}
-      done()
-
   describe '#rmdir()', ->
     it 'should remove directory', (done) ->
       getNock().delete('/v2/keys/key?dir=true').reply(200)
       etcd.rmdir 'key', done
 
-  describe '#rmdirSync()', ->
-    it 'should synchronously remove directory', (done) ->
-      getNock().delete('/v2/keys/key?dir=true')
-        .reply(200, '{"action":"delete","node":{"key":"/key","dir":true,"modifiedIndex":1,"createdIndex":3}}')
-      val = etcd.rmdirSync 'key'
-      val.body.should.containEql {action: "delete"}
-      val.body.node.should.containEql {dir: true}
-      done()
-
   describe '#del()', ->
     it 'should delete a given key in etcd', (done) ->
       getNock().delete('/v2/keys/key').reply(200)
       etcd.del 'key', done
-
-  describe '#delSync()', ->
-    it 'should synchronously delete a given key in etcd', (done) ->
-      getNock().delete('/v2/keys/key2').reply(200, '{"action":"delete"}')
-      val = etcd.delSync 'key2'
-      val.body.should.containEql {action: "delete"}
-      done()
 
   describe '#watch()', ->
     it 'should do a get with wait=true', (done) ->
@@ -365,7 +309,7 @@ describe 'Cancellation Token', ->
       .log(console.log)
       .get('/v2/keys/key')
       .reply(200, '{"action":"GET","key":"/key","value":"value","index":1}')
-    etcd = new Etcd '127.0.0.1', 4001
+    etcd = new Etcd '127.0.0.1', 2379
 
     # This sucks a bit.. are there any better way of checking that a callback
     # does not happen?
@@ -380,8 +324,8 @@ describe 'Multiserver/Cluster support', ->
     nock.cleanAll()
 
   it 'should accept list of servers in constructor', ->
-    etcd = new Etcd ['localhost:4001', 'localhost:4002']
-    etcd.getHosts().should.eql ['http://localhost:4001', 'http://localhost:4002']
+    etcd = new Etcd ['localhost:2379', 'localhost:4002']
+    etcd.getHosts().should.eql ['http://localhost:2379', 'http://localhost:4002']
 
   it 'should try next server in list on http error', (done) ->
     path = '/v2/keys/foo'
