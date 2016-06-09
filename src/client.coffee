@@ -28,15 +28,15 @@ class CancellationToken
     @req.abort() if @req?
 
   cancel: @::abort
-
+  wasAborted: @::isAborted
 
 # HTTP Client for connecting to etcd servers
 class Client
 
-  constructor: (@hosts, @sslopts) ->
+  constructor: (@hosts, @options, @sslopts) ->
 
   execute: (method, options, callback) =>
-    opt = _.defaults (_.clone options), defaultRequestOptions, { method: method }
+    opt = _.defaults (_.clone options), @options, defaultRequestOptions, { method: method }
     opt.clientOptions = _.defaults opt.clientOptions, defaultClientOptions
 
     servers = _.shuffle @hosts
@@ -54,7 +54,7 @@ class Client
   # Multiserver (cluster) executer
   _multiserverHelper: (servers, options, token, callback) =>
     host = _.first(servers)
-    options.url = "#{options.serverprotocol}://#{host}#{options.path}"
+    options.url = "#{host}#{options.path}"
 
     return if token.isAborted() # Aborted by user?
 
@@ -80,9 +80,13 @@ class Client
       # Deliver response
       @_handleResponse err, resp, body, callback
 
-    req = request options, reqRespHandler
+    req = @_doRequest options, reqRespHandler
     token.setRequest req
     return req
+
+
+  _doRequest: (options, reqRespHandler) ->
+    request options, reqRespHandler
 
 
   _retry: (token, options, callback) =>
