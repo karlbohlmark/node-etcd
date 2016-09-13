@@ -184,7 +184,7 @@ class Etcd
   _prepareOpts: (path, apiVersion = "/v2", value = null, allOpts = {}) ->
     # serverprotocol = if @sslopts? then "https" else "http"
 
-    queryString = _.omit allOpts, 'maxRetries', 'synchronous'
+    queryString = _.omit allOpts, 'maxRetries', 'synchronous', 'timeout'
 
     clientOptions = _.pick allOpts, 'maxRetries'
 
@@ -193,6 +193,7 @@ class Etcd
       # serverprotocol: serverprotocol
       json: true
       qs: queryString
+      timeout: allOpts.timeout
       clientOptions: clientOptions
       synchronous: allOpts.synchronous
       form: { value: value } if value?
@@ -201,7 +202,7 @@ class Etcd
 
 
   # Swap callback and options if no options was given.
-  _argParser: (options, callback) ->
+  _argParser: (options = {}, callback) ->
     if typeof options is 'function'
       [{}, options]
     else
